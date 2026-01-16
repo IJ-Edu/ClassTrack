@@ -59,18 +59,16 @@
     /* Frosted Glass Utility */
     .glass {
       background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
     }
 
     .glass-card {
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.6));
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
     }
 
     /* Neon Glow Text - REFINED */
@@ -97,28 +95,22 @@
         transform: translateY(0px);
       }
 
-      50% {
-        transform: translateY(-6px);
-      }
-
       100% {
         transform: translateY(0px);
       }
     }
 
-    /* Glass Intensity Variants */
+    /* Glass Intensity Variants - NERFED */
     body.glass-high .glass,
     body.glass-high .glass-card {
-      backdrop-filter: blur(40px);
-      -webkit-backdrop-filter: blur(40px);
-      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
     }
 
     body.glass-low .glass,
-    body.glass-low .glass-card {
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      background: rgba(15, 23, 42, 0.4);
+    body.glass-low .glass-low .glass-card {
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
     }
 
     /* Compact Mode */
@@ -196,7 +188,7 @@
   }
 }
   </script>
-  <script type="module" crossorigin src="/ClassTrack/assets/index-KRLMtC80.js"></script>
+  <script type="module" crossorigin src="/ClassTrack/assets/index-DTbKtZJ4.js"></script>
   <link rel="stylesheet" crossorigin href="/ClassTrack/assets/index-CAbwLFZw.css">
 </head>
 
