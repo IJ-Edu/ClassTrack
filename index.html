@@ -1,95 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#0f172a" />
-    <title>ClassTrack Pro</title>
-    
-    <!-- Link the Manifest for APK/Mobile behavior -->
-    <link rel="manifest" href="./manifest-CP9G_yy2.json">
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Math Equation CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
-    
-    <!-- ✅ ROBUST API KEY HANDLING -->
-    <script>
-      // Initialize window.process for environments where it doesn't exist (like Netlify/Browsers)
-      window.process = window.process || {};
-      window.process.env = window.process.env || {};
-      
-      // If the key isn't set by the environment, use the fallback
-      if (!window.process.env.API_KEY) {
-         // 👇 REPLACE THIS WITH YOUR REAL GEMINI KEY IF NEEDED
-         window.process.env.API_KEY = "AIzaSyAve1vsCbJRloWzVb8NHcs-g8d4kKBnZ8o";
-      }
-    </script>
 
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Outfit', 'sans-serif'],
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>ClassTrack Pro</title>
+
+  <!-- Link the Manifest for APK/Mobile behavior -->
+  <link rel="manifest" href="./assets/manifest-CP9G_yy2.json">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Math Equation CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+
+  <!-- ✅ ROBUST API KEY HANDLING -->
+  <script>
+    // Initialize window.process for environments where it doesn't exist (like Netlify/Browsers)
+    window.process = window.process || {};
+    window.process.env = window.process.env || {};
+
+    // If the key isn't set by the environment, use the fallback
+    if (!window.process.env.API_KEY) {
+      // 👇 REPLACE THIS WITH YOUR REAL GEMINI KEY IF NEEDED
+      window.process.env.API_KEY = "AIzaSyAve1vsCbJRloWzVb8NHcs-g8d4kKBnZ8o";
+    }
+  </script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            midnight: {
+              900: '#0f172a',
+              800: '#1e293b',
+              card: 'rgba(30, 41, 59, 0.7)'
             },
-            colors: {
-              midnight: {
-                900: '#0f172a',
-                800: '#1e293b',
-                card: 'rgba(30, 41, 59, 0.7)'
-              },
-              problue: {
-                50: '#f0f9ff',
-                100: '#e0f2fe',
-                600: '#0284c7',
-                card: 'rgba(255, 255, 255, 0.8)'
-              },
-              peach: {
-                50: '#fff7ed',
-                100: '#ffedd5',
-                500: '#f97316',
-                card: 'rgba(255, 255, 255, 0.9)'
-              }
+            problue: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              600: '#0284c7',
+              card: 'rgba(255, 255, 255, 0.8)'
             },
-            animation: {
-              'fade-in': 'fadeIn 0.5s ease-out',
-              'slide-up': 'slideUp 0.5s ease-out',
+            peach: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              500: '#f97316',
+              card: 'rgba(255, 255, 255, 0.9)'
+            }
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.5s ease-out',
+            'slide-up': 'slideUp 0.5s ease-out',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
             },
-            keyframes: {
-              fadeIn: {
-                '0%': { opacity: '0' },
-                '100%': { opacity: '1' },
-              },
-              slideUp: {
-                '0%': { transform: 'translateY(20px)', opacity: '0' },
-                '100%': { transform: 'translateY(0)', opacity: '1' },
-              }
+            slideUp: {
+              '0%': { transform: 'translateY(20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
             }
           }
         }
       }
-    </script>
-    <style>
-      body {
-        -webkit-tap-highlight-color: transparent;
-        overscroll-behavior-y: none;
-      }
-      /* Custom Scrollbar for webkit */
-      ::-webkit-scrollbar {
-        width: 6px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: rgba(156, 163, 175, 0.5);
-        border-radius: 3px;
-      }
-    </style>
+    }
+  </script>
+  <style>
+    body {
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior-y: none;
+    }
+
+    /* Custom Scrollbar for webkit */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.5);
+      border-radius: 3px;
+    }
+  </style>
 
 
   <script type="importmap">
@@ -116,9 +120,11 @@
   }
 }
 </script>
-  <script type="module" crossorigin src="./index-DaM0Lxqe.js"></script>
+  <script type="module" crossorigin src="./assets/index-DDv7TbiB.js"></script>
 </head>
-  <body>
-    <div id="root"></div>
+
+<body>
+  <div id="root"></div>
 </body>
+
 </html>
