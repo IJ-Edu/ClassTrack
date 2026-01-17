@@ -10,7 +10,7 @@
   <!-- Link the Manifest for APK/Mobile behavior -->
   <link rel="manifest" href="/ClassTrack/assets/manifest-CP9G_yy2.json">
 
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" type="image/x-icon" href="/ClassTrack/favicon.ico">
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Math Equation CSS -->
@@ -29,140 +29,8 @@
     }
   </script>
 
-  <style>
-    body {
-      -webkit-tap-highlight-color: transparent;
-      overscroll-behavior-y: none;
-      background-color: #0f172a;
-      background-image:
-        radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
-        radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
-        radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
-      background-size: 200% 200%;
-      animation: gradient-xy 15s ease infinite;
-    }
 
-    /* Custom Scrollbar for webkit */
-    ::-webkit-scrollbar {
-      width: 6px;
-    }
 
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: rgba(156, 163, 175, 0.3);
-      border-radius: 3px;
-    }
-
-    /* Frosted Glass Utility */
-    .glass {
-      background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .glass-card {
-      background: rgba(30, 41, 59, 0.8);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    /* Neon Glow Text - REFINED */
-    .neon-text {
-      text-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
-    }
-
-    @keyframes gradient-xy {
-      0% {
-        background-position: 0% 50%;
-      }
-
-      50% {
-        background-position: 100% 50%;
-      }
-
-      100% {
-        background-position: 0% 50%;
-      }
-    }
-
-    @keyframes float {
-      0% {
-        transform: translateY(0px);
-      }
-
-      100% {
-        transform: translateY(0px);
-      }
-    }
-
-    /* Glass Intensity Variants - NERFED */
-    body.glass-high .glass,
-    body.glass-high .glass-card {
-      backdrop-filter: blur(15px);
-      -webkit-backdrop-filter: blur(15px);
-    }
-
-    body.glass-low .glass,
-    body.glass-low .glass-low .glass-card {
-      backdrop-filter: blur(2px);
-      -webkit-backdrop-filter: blur(2px);
-    }
-
-    /* Compact Mode */
-    body.compact-mode .p-6,
-    body.compact-mode .p-8 {
-      padding: 1rem !important;
-    }
-
-    body.compact-mode .gap-6,
-    body.compact-mode .gap-8 {
-      gap: 1rem !important;
-    }
-
-    body.compact-mode .text-5xl {
-      font-size: 2.25rem !important;
-    }
-
-    body.compact-mode .text-3xl {
-      font-size: 1.5rem !important;
-    }
-
-    /* Disable Animations */
-    body.disable-animations * {
-      animation: none !important;
-      transition: none !important;
-    }
-  </style>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: { sans: ['Outfit', 'sans-serif'] },
-          colors: {
-            midnight: { 900: '#0f172a', 800: '#1e293b', card: 'rgba(30, 41, 59, 0.6)' },
-            neon: { purple: '#d946ef', blue: '#6366f1' }
-          },
-          animation: {
-            'fade-in': 'fadeIn 0.5s ease-out',
-            'slide-up': 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
-            'float': 'float 6s ease-in-out infinite',
-            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-          },
-          keyframes: {
-            fadeIn: { '0%': { opacity: '0', filter: 'blur(10px)' }, '100%': { opacity: '1', filter: 'blur(0)' } },
-            slideUp: { '0%': { transform: 'translateY(40px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
-            float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } }
-          }
-        }
-      }
-    }
-  </script>
 
   <script type="importmap">
         {
@@ -188,8 +56,8 @@
   }
 }
   </script>
-  <script type="module" crossorigin src="/ClassTrack/assets/index-DTbKtZJ4.js"></script>
-  <link rel="stylesheet" crossorigin href="/ClassTrack/assets/index-CAbwLFZw.css">
+  <script type="module" crossorigin src="/ClassTrack/assets/index-D8W_sspJ.js"></script>
+  <link rel="stylesheet" crossorigin href="/ClassTrack/assets/index-B1w3Uxpg.css">
 </head>
 
 <body>
