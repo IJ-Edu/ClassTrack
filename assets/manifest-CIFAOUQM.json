@@ -1,0 +1,29 @@
+{
+  "name": "IJ Education System",
+  "short_name": "IJ Education",
+  "description": "Complete School & Coaching Management System with Attendance, Fees, and Student Registry",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "categories": [
+    "education",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2997/2997322.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2997/2997322.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
