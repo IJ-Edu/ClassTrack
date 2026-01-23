@@ -1,16 +1,40 @@
 {
+  "id": "/ClassTrack/",
   "name": "IJ Education System",
   "short_name": "IJ Education",
-  "description": "Complete School & Coaching Management System with Attendance, Fees, and Student Registry",
-  "start_url": ".",
-  "scope": ".",
+  "description": "Premium School & Coaching Management System with Attendance, Fees, and Student Registry",
+  "dir": "ltr",
+  "lang": "en-US",
+  "start_url": "/ClassTrack/",
+  "scope": "/ClassTrack/",
   "display": "standalone",
+  "display_override": [
+    "standalone",
+    "window-controls-overlay"
+  ],
   "background_color": "#0f172a",
   "theme_color": "#6366f1",
-  "orientation": "portrait-primary",
+  "orientation": "portrait",
   "categories": [
     "education",
-    "productivity"
+    "productivity",
+    "business"
+  ],
+  "screenshots": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2997/2997322.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "ClassTrack Dashboard"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2997/2997322.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mobile Attendance"
+    }
   ],
   "icons": [
     {
