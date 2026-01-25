@@ -11,7 +11,7 @@
   <title>ClassTrack Pro</title>
 
   <!-- Link the Manifest - Essential for PWA -->
-  <link rel="manifest" href="/ClassTrack/assets/manifest-Bk50KeL0.json">
+  <link rel="manifest" href="/ClassTrack/assets/manifest-DuDo-jCs.json">
 
   <link rel="icon" type="image/x-icon" href="./favicon.ico">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2997/2997322.png">
@@ -28,22 +28,162 @@
   <div id="root"></div>
   <!-- Standard module script - Vite will bundle everything automatically -->
 
-  <!-- Service Worker Registration -->
+  <!-- Service Worker Registration with Full PWA Features -->
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(registration => {
-            console.log('✅ ClassTrack SW Registered');
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('./sw.js');
+          console.log('✅ ClassTrack SW Registered');
 
-            // Background Sync Registration
-            if ('sync' in registration) {
-              registration.sync.register('sync-attendance').catch(err => console.warn('Sync failed:', err));
+          // ========================================
+          // 1. Background Sync Registration
+          // ========================================
+          if ('sync' in registration) {
+            try {
+              await registration.sync.register('sync-attendance');
+              await registration.sync.register('sync-data');
+              await registration.sync.register('sync-queue');
+              console.log('✅ Background Sync registered');
+            } catch (err) {
+              console.warn('⚠️ Background Sync not supported:', err);
             }
-          })
-          .catch(err => console.error('❌ SW Registration Failed:', err));
+          }
+
+          // ========================================
+          // 2. Periodic Background Sync Registration
+          // ========================================
+          if ('periodicSync' in registration) {
+            try {
+              const status = await navigator.permissions.query({ name: 'periodic-background-sync' });
+              if (status.state === 'granted') {
+                // Register periodic sync tasks
+                await registration.periodicSync.register('sync-content', {
+                  minInterval: 24 * 60 * 60 * 1000 // 24 hours
+                });
+                await registration.periodicSync.register('update-data', {
+                  minInterval: 12 * 60 * 60 * 1000 // 12 hours
+                });
+                await registration.periodicSync.register('check-updates', {
+                  minInterval: 6 * 60 * 60 * 1000 // 6 hours
+                });
+                console.log('✅ Periodic Sync registered');
+              } else {
+                console.log('⚠️ Periodic Sync permission not granted');
+              }
+            } catch (err) {
+              console.warn('⚠️ Periodic Sync not supported:', err);
+            }
+          }
+
+          // ========================================
+          // 3. Push Notification Setup
+          // ========================================
+          if ('pushManager' in registration) {
+            try {
+              // Check if already subscribed
+              const subscription = await registration.pushManager.getSubscription();
+              if (!subscription) {
+                console.log('📢 Push notifications available - user can enable in settings');
+              } else {
+                console.log('✅ Push notifications already enabled');
+              }
+            } catch (err) {
+              console.warn('⚠️ Push Notifications not supported:', err);
+            }
+          }
+
+          // ========================================
+          // 4. Listen for SW Messages
+          // ========================================
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            console.log('📨 SW Message:', event.data);
+            if (event.data.type === 'SYNC_COMPLETE') {
+              console.log('✅ Background sync completed');
+              window.dispatchEvent(new CustomEvent('pwa-sync-complete'));
+            } else if (event.data.type === 'PERIODIC_SYNC_COMPLETE') {
+              console.log('✅ Periodic sync completed');
+              window.dispatchEvent(new CustomEvent('pwa-periodic-sync-complete'));
+            } else if (event.data.type === 'REFRESH_DATA') {
+              window.dispatchEvent(new CustomEvent('pwa-refresh-data'));
+            } else if (event.data.type === 'NOTIFICATION_CLICK') {
+              window.dispatchEvent(new CustomEvent('pwa-notification-click', { detail: event.data }));
+            }
+          });
+
+          // ========================================
+          // 5. Handle SW Updates
+          // ========================================
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('🔄 New SW version available');
+                window.dispatchEvent(new CustomEvent('pwa-update-available'));
+              }
+            });
+          });
+
+        } catch (err) {
+          console.error('❌ SW Registration Failed:', err);
+        }
+      });
+
+      // Online/Offline status handling
+      window.addEventListener('online', () => {
+        console.log('🌐 Online - triggering sync');
+        navigator.serviceWorker.ready.then((registration) => {
+          if ('sync' in registration) {
+            registration.sync.register('sync-queue');
+          }
+        });
+      });
+
+      window.addEventListener('offline', () => {
+        console.log('📴 Offline - requests will be queued');
       });
     }
+
+    // Helper function to request push notification permission
+    window.requestPushPermission = async function () {
+      if (!('Notification' in window)) {
+        console.warn('Push notifications not supported');
+        return false;
+      }
+
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        console.log('✅ Push notification permission granted');
+        const registration = await navigator.serviceWorker.ready;
+        try {
+          const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: null // Add your VAPID public key here for production
+          });
+          console.log('Push subscription:', subscription.toJSON());
+          return true;
+        } catch (err) {
+          console.error('Push subscription failed:', err);
+          return false;
+        }
+      }
+      return false;
+    };
+
+    // Helper function to queue requests for background sync
+    window.queueForSync = async function (requestData) {
+      const registration = await navigator.serviceWorker.ready;
+      if (registration.active) {
+        return new Promise((resolve) => {
+          const messageChannel = new MessageChannel();
+          messageChannel.port1.onmessage = (event) => resolve(event.data);
+          registration.active.postMessage(
+            { type: 'QUEUE_REQUEST', request: requestData },
+            [messageChannel.port2]
+          );
+        });
+      }
+    };
   </script>
 </body>
 

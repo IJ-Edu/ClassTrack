@@ -74,5 +74,33 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+classtrack",
+      "url": "./index.html?handler=%s"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "file_handlers": [
+    {
+      "action": "./index.html",
+      "accept": {
+        "application/json": [
+          ".json"
+        ],
+        "text/csv": [
+          ".csv"
+        ]
+      }
+    }
   ]
 }
