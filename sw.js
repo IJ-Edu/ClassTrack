@@ -3,18 +3,17 @@
 // PWA Builder Compliant (All Features Enabled)
 // ============================================
 
-const CACHE_NAME = 'ij-education-v3';
-const OFFLINE_URL = './index.html';
-const OFFLINE_FALLBACK_PAGE = './offline.html';
+const CACHE_NAME = 'ij-education-v4';
+const OFFLINE_URL = '/ClassTrack/offline.html';
 
 // Resources to pre-cache for offline support
+// These MUST be cached during install for offline support to work
 const PRE_CACHE_RESOURCES = [
-    './',
-    './index.html',
-    './manifest.json',
-    './favicon.ico',
-    './index.css',
-    './offline.html'
+    '/ClassTrack/',
+    '/ClassTrack/index.html',
+    '/ClassTrack/offline.html',
+    '/ClassTrack/manifest.json',
+    '/ClassTrack/favicon.ico'
 ];
 
 // ============================================
@@ -23,16 +22,24 @@ const PRE_CACHE_RESOURCES = [
 self.addEventListener('install', (event) => {
     console.log('[SW] Installing service worker...');
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            console.log('[SW] Pre-caching resources');
-            return cache.addAll(PRE_CACHE_RESOURCES);
-        })
+        caches.open(CACHE_NAME)
+            .then((cache) => {
+                console.log('[SW] Pre-caching offline resources');
+                return cache.addAll(PRE_CACHE_RESOURCES);
+            })
+            .then(() => {
+                console.log('[SW] Pre-cache complete');
+            })
+            .catch((err) => {
+                console.error('[SW] Pre-cache failed:', err);
+            })
     );
+    // Activate immediately
     self.skipWaiting();
 });
 
 // ============================================
-// 2. ACTIVATE EVENT - Clean old caches
+// 2. ACTIVATE EVENT - Clean old caches & claim
 // ============================================
 self.addEventListener('activate', (event) => {
     console.log('[SW] Activating service worker...');
@@ -40,109 +47,111 @@ self.addEventListener('activate', (event) => {
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME) {
+                    if (cacheName !== CACHE_NAME && cacheName !== 'offline-queue') {
                         console.log('[SW] Deleting old cache:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
             );
+        }).then(() => {
+            console.log('[SW] Claiming clients');
+            return self.clients.claim();
         })
     );
-    self.clients.claim();
 });
 
 // ============================================
 // 3. FETCH EVENT - Offline Support Strategy
+// This is the KEY for PWA Builder "Offline Support"
 // ============================================
 self.addEventListener('fetch', (event) => {
-    // Skip non-GET requests
-    if (event.request.method !== 'GET') {
+    const request = event.request;
+
+    // Only handle GET requests
+    if (request.method !== 'GET') {
         return;
     }
 
-    const url = new URL(event.request.url);
-
-    // Navigation requests (SPA support with offline fallback)
-    if (event.request.mode === 'navigate') {
+    // Handle navigation requests (HTML pages) - THIS IS CRITICAL FOR OFFLINE SUPPORT
+    if (request.mode === 'navigate') {
         event.respondWith(
-            fetch(event.request)
+            fetch(request)
                 .then((response) => {
-                    // Cache successful navigation responses
-                    if (response.status === 200) {
+                    // Clone and cache successful responses
+                    if (response && response.status === 200) {
                         const responseClone = response.clone();
                         caches.open(CACHE_NAME).then((cache) => {
-                            cache.put(event.request, responseClone);
+                            cache.put(request, responseClone);
                         });
                     }
                     return response;
                 })
                 .catch(() => {
-                    // Return cached page or offline fallback
-                    return caches.match(event.request).then((cached) => {
-                        return cached || caches.match(OFFLINE_URL) || caches.match(OFFLINE_FALLBACK_PAGE);
-                    });
+                    // OFFLINE: Return cached page or offline fallback
+                    console.log('[SW] Offline - serving from cache');
+                    return caches.match(request)
+                        .then((cachedResponse) => {
+                            if (cachedResponse) {
+                                return cachedResponse;
+                            }
+                            // Return offline page as fallback
+                            return caches.match(OFFLINE_URL);
+                        });
                 })
         );
         return;
     }
 
-    // Static assets - Cache First, then Network
+    // Handle other requests (assets, API calls, etc.)
+    const url = new URL(request.url);
+
+    // Static assets - Stale While Revalidate
     const isStaticAsset =
-        event.request.destination === 'script' ||
-        event.request.destination === 'style' ||
-        event.request.destination === 'image' ||
-        event.request.destination === 'font' ||
-        url.pathname.endsWith('.js') ||
-        url.pathname.endsWith('.css') ||
-        url.pathname.endsWith('.png') ||
-        url.pathname.endsWith('.jpg') ||
-        url.pathname.endsWith('.svg') ||
-        url.pathname.endsWith('.woff2');
+        request.destination === 'script' ||
+        request.destination === 'style' ||
+        request.destination === 'image' ||
+        request.destination === 'font' ||
+        url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/);
 
     if (isStaticAsset) {
         event.respondWith(
-            caches.match(event.request).then((cached) => {
-                if (cached) {
-                    // Return cached version but fetch new version in background
-                    fetch(event.request).then((response) => {
-                        if (response && response.status === 200) {
+            caches.match(request).then((cached) => {
+                // If we have a cached version, return it and update in background
+                const fetchPromise = fetch(request)
+                    .then((networkResponse) => {
+                        if (networkResponse && networkResponse.status === 200) {
+                            const responseClone = networkResponse.clone();
                             caches.open(CACHE_NAME).then((cache) => {
-                                cache.put(event.request, response);
+                                cache.put(request, responseClone);
                             });
                         }
-                    }).catch(() => { });
-                    return cached;
-                }
-                return fetch(event.request).then((response) => {
-                    if (!response || response.status !== 200 || response.type !== 'basic') {
-                        return response;
-                    }
-                    const toCache = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, toCache));
-                    return response;
-                }).catch(() => {
-                    // Return nothing for failed static assets
-                    return new Response('', { status: 503, statusText: 'Service Unavailable' });
-                });
+                        return networkResponse;
+                    })
+                    .catch(() => {
+                        // Network failed, return cached if available
+                        return cached;
+                    });
+
+                return cached || fetchPromise;
             })
         );
         return;
     }
 
-    // API/Dynamic requests - Network First, then Cache
+    // API/Dynamic requests - Network first with cache fallback
     event.respondWith(
-        fetch(event.request)
+        fetch(request)
             .then((response) => {
                 if (response && response.status === 200) {
                     const responseClone = response.clone();
                     caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, responseClone);
+                        cache.put(request, responseClone);
                     });
                 }
                 return response;
             })
             .catch(() => {
-                return caches.match(event.request);
+                return caches.match(request);
             })
     );
 });
@@ -226,12 +235,10 @@ self.addEventListener('periodicsync', (event) => {
 async function syncContentPeriodically() {
     console.log('[SW] Periodic content sync...');
     try {
-        // Refresh cached content
         const cache = await caches.open(CACHE_NAME);
 
         // Update critical resources
-        const criticalResources = ['./index.html', './manifest.json'];
-        for (const resource of criticalResources) {
+        for (const resource of PRE_CACHE_RESOURCES) {
             try {
                 const response = await fetch(resource, { cache: 'no-cache' });
                 if (response.ok) {
@@ -254,7 +261,6 @@ async function syncContentPeriodically() {
 
 async function updateDataPeriodically() {
     console.log('[SW] Periodic data update...');
-    // Trigger data refresh in the app
     const clients = await self.clients.matchAll();
     clients.forEach(client => {
         client.postMessage({ type: 'REFRESH_DATA' });
@@ -325,13 +331,10 @@ self.addEventListener('notificationclick', (event) => {
         return;
     }
 
-    // Default action or 'open' action - open/focus the app
     event.waitUntil(
         self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-            // Check if there's already a window open
             for (const client of clientList) {
                 if (client.url.includes(self.location.origin) && 'focus' in client) {
-                    // Send data to client if available
                     if (notificationData.url) {
                         client.postMessage({
                             type: 'NOTIFICATION_CLICK',
@@ -342,8 +345,7 @@ self.addEventListener('notificationclick', (event) => {
                     return client.focus();
                 }
             }
-            // No window open, open a new one
-            const urlToOpen = notificationData.url || './index.html';
+            const urlToOpen = notificationData.url || '/ClassTrack/';
             return self.clients.openWindow(urlToOpen);
         })
     );
@@ -368,7 +370,6 @@ self.addEventListener('message', (event) => {
             break;
 
         case 'CACHE_URLS':
-            // Cache specific URLs on demand
             if (event.data.urls && Array.isArray(event.data.urls)) {
                 event.waitUntil(
                     caches.open(CACHE_NAME).then((cache) => {
@@ -401,7 +402,6 @@ self.addEventListener('message', (event) => {
             break;
 
         case 'QUEUE_REQUEST':
-            // Queue a request for background sync
             if (event.data.request) {
                 event.waitUntil(
                     queueRequest(event.data.request).then(() => {
@@ -440,4 +440,4 @@ self.addEventListener('unhandledrejection', (event) => {
     console.error('[SW] Unhandled rejection:', event.reason);
 });
 
-console.log('[SW] Service Worker loaded');
+console.log('[SW] Service Worker loaded - Version 4');
