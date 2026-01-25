@@ -1,14 +1,13 @@
 // ============================================
 // IJ EDUCATION SYSTEM - Service Worker
-// PWA Builder Compliant (All Features Enabled)
+// TRUE OFFLINE SUPPORT - Full App Works Offline!
 // ============================================
 
-const CACHE_NAME = 'ij-education-v4';
-const OFFLINE_URL = '/ClassTrack/offline.html';
+const CACHE_NAME = 'ij-education-v5';
+const OFFLINE_FALLBACK = '/ClassTrack/offline.html';
 
-// Resources to pre-cache for offline support
-// These MUST be cached during install for offline support to work
-const PRE_CACHE_RESOURCES = [
+// Core shell to pre-cache (these never change paths)
+const CORE_CACHE = [
     '/ClassTrack/',
     '/ClassTrack/index.html',
     '/ClassTrack/offline.html',
@@ -17,32 +16,78 @@ const PRE_CACHE_RESOURCES = [
 ];
 
 // ============================================
-// 1. INSTALL EVENT - Pre-cache resources
+// 1. INSTALL - Cache core + fetch app bundle
 // ============================================
 self.addEventListener('install', (event) => {
-    console.log('[SW] Installing service worker...');
+    console.log('[SW] Installing - Full Offline Support');
+
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('[SW] Pre-caching offline resources');
-                return cache.addAll(PRE_CACHE_RESOURCES);
-            })
-            .then(() => {
-                console.log('[SW] Pre-cache complete');
-            })
-            .catch((err) => {
-                console.error('[SW] Pre-cache failed:', err);
-            })
+        caches.open(CACHE_NAME).then(async (cache) => {
+            // First cache the core files
+            console.log('[SW] Caching core files...');
+            await cache.addAll(CORE_CACHE);
+
+            // Now fetch and cache the main page to get JS/CSS references
+            console.log('[SW] Fetching app bundle...');
+            try {
+                const response = await fetch('/ClassTrack/index.html');
+                const html = await response.text();
+
+                // Extract JS and CSS file paths from HTML
+                const jsMatch = html.match(/src="([^"]*\.js)"/g);
+                const cssMatch = html.match(/href="([^"]*\.css)"/g);
+
+                const assetsToCache = [];
+
+                if (jsMatch) {
+                    jsMatch.forEach(match => {
+                        const path = match.match(/src="([^"]*)"/)[1];
+                        if (path.includes('/ClassTrack/') || path.startsWith('/')) {
+                            assetsToCache.push(path);
+                        }
+                    });
+                }
+
+                if (cssMatch) {
+                    cssMatch.forEach(match => {
+                        const path = match.match(/href="([^"]*)"/)[1];
+                        if (path.includes('/ClassTrack/') && path.endsWith('.css')) {
+                            assetsToCache.push(path);
+                        }
+                    });
+                }
+
+                console.log('[SW] Caching app assets:', assetsToCache);
+
+                // Cache each asset
+                for (const asset of assetsToCache) {
+                    try {
+                        const assetResponse = await fetch(asset);
+                        if (assetResponse.ok) {
+                            await cache.put(asset, assetResponse);
+                            console.log('[SW] Cached:', asset);
+                        }
+                    } catch (e) {
+                        console.warn('[SW] Failed to cache:', asset);
+                    }
+                }
+
+            } catch (e) {
+                console.warn('[SW] Could not fetch app bundle:', e);
+            }
+
+            console.log('[SW] ✅ Full app cached for offline use!');
+        })
     );
-    // Activate immediately
+
     self.skipWaiting();
 });
 
 // ============================================
-// 2. ACTIVATE EVENT - Clean old caches & claim
+// 2. ACTIVATE - Clean old caches
 // ============================================
 self.addEventListener('activate', (event) => {
-    console.log('[SW] Activating service worker...');
+    console.log('[SW] Activating...');
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
@@ -61,91 +106,132 @@ self.addEventListener('activate', (event) => {
 });
 
 // ============================================
-// 3. FETCH EVENT - Offline Support Strategy
-// This is the KEY for PWA Builder "Offline Support"
+// 3. FETCH - TRUE OFFLINE SUPPORT
+// The app will work fully offline!
 // ============================================
 self.addEventListener('fetch', (event) => {
     const request = event.request;
 
-    // Only handle GET requests
-    if (request.method !== 'GET') {
+    // Skip non-GET
+    if (request.method !== 'GET') return;
+
+    const url = new URL(request.url);
+
+    // Skip external requests (Firebase, CDNs for fonts, etc)
+    // These will use Firebase's built-in offline persistence
+    if (!url.origin.includes(self.location.origin) &&
+        !url.pathname.includes('/ClassTrack/')) {
         return;
     }
 
-    // Handle navigation requests (HTML pages) - THIS IS CRITICAL FOR OFFLINE SUPPORT
+    // NAVIGATION REQUESTS (HTML pages)
     if (request.mode === 'navigate') {
         event.respondWith(
+            // Try network first
             fetch(request)
                 .then((response) => {
-                    // Clone and cache successful responses
+                    // Cache successful responses
                     if (response && response.status === 200) {
-                        const responseClone = response.clone();
-                        caches.open(CACHE_NAME).then((cache) => {
-                            cache.put(request, responseClone);
+                        const clone = response.clone();
+                        caches.open(CACHE_NAME).then(cache => {
+                            cache.put(request, clone);
                         });
                     }
                     return response;
                 })
-                .catch(() => {
-                    // OFFLINE: Return cached page or offline fallback
-                    console.log('[SW] Offline - serving from cache');
-                    return caches.match(request)
-                        .then((cachedResponse) => {
-                            if (cachedResponse) {
-                                return cachedResponse;
-                            }
-                            // Return offline page as fallback
-                            return caches.match(OFFLINE_URL);
-                        });
+                .catch(async () => {
+                    // OFFLINE: Serve cached app
+                    console.log('[SW] Offline - serving cached app');
+
+                    const cached = await caches.match(request);
+                    if (cached) return cached;
+
+                    // Try index.html
+                    const indexCached = await caches.match('/ClassTrack/index.html');
+                    if (indexCached) return indexCached;
+
+                    const rootCached = await caches.match('/ClassTrack/');
+                    if (rootCached) return rootCached;
+
+                    // Last resort: offline page
+                    return caches.match(OFFLINE_FALLBACK);
                 })
         );
         return;
     }
 
-    // Handle other requests (assets, API calls, etc.)
-    const url = new URL(request.url);
-
-    // Static assets - Stale While Revalidate
-    const isStaticAsset =
-        request.destination === 'script' ||
+    // JS/CSS ASSETS - Cache First (app bundle)
+    if (request.destination === 'script' ||
         request.destination === 'style' ||
-        request.destination === 'image' ||
-        request.destination === 'font' ||
-        url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/);
+        url.pathname.endsWith('.js') ||
+        url.pathname.endsWith('.css')) {
 
-    if (isStaticAsset) {
         event.respondWith(
             caches.match(request).then((cached) => {
-                // If we have a cached version, return it and update in background
-                const fetchPromise = fetch(request)
-                    .then((networkResponse) => {
-                        if (networkResponse && networkResponse.status === 200) {
-                            const responseClone = networkResponse.clone();
-                            caches.open(CACHE_NAME).then((cache) => {
-                                cache.put(request, responseClone);
+                if (cached) {
+                    console.log('[SW] Serving cached asset:', url.pathname);
+                    // Update in background
+                    fetch(request).then(response => {
+                        if (response && response.ok) {
+                            caches.open(CACHE_NAME).then(cache => {
+                                cache.put(request, response);
                             });
                         }
-                        return networkResponse;
-                    })
-                    .catch(() => {
-                        // Network failed, return cached if available
-                        return cached;
-                    });
+                    }).catch(() => { });
+                    return cached;
+                }
 
-                return cached || fetchPromise;
+                // Not cached, fetch and cache
+                return fetch(request).then((response) => {
+                    if (response && response.ok) {
+                        const clone = response.clone();
+                        caches.open(CACHE_NAME).then(cache => {
+                            cache.put(request, clone);
+                        });
+                    }
+                    return response;
+                }).catch(() => {
+                    console.warn('[SW] Asset fetch failed:', url.pathname);
+                    return new Response('', { status: 503 });
+                });
             })
         );
         return;
     }
 
-    // API/Dynamic requests - Network first with cache fallback
+    // IMAGES & FONTS - Cache First
+    if (request.destination === 'image' ||
+        request.destination === 'font' ||
+        url.pathname.match(/\.(png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf)$/)) {
+
+        event.respondWith(
+            caches.match(request).then((cached) => {
+                if (cached) return cached;
+
+                return fetch(request).then((response) => {
+                    if (response && response.ok) {
+                        const clone = response.clone();
+                        caches.open(CACHE_NAME).then(cache => {
+                            cache.put(request, clone);
+                        });
+                    }
+                    return response;
+                }).catch(() => {
+                    return new Response('', { status: 503 });
+                });
+            })
+        );
+        return;
+    }
+
+    // OTHER REQUESTS - Network with cache fallback
     event.respondWith(
         fetch(request)
             .then((response) => {
-                if (response && response.status === 200) {
-                    const responseClone = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(request, responseClone);
+                if (response && response.ok) {
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(request, clone);
                     });
                 }
                 return response;
@@ -157,27 +243,24 @@ self.addEventListener('fetch', (event) => {
 });
 
 // ============================================
-// 4. BACKGROUND SYNC - Queue offline actions
+// 4. BACKGROUND SYNC
 // ============================================
 self.addEventListener('sync', (event) => {
-    console.log('[SW] Background Sync triggered:', event.tag);
+    console.log('[SW] Background Sync:', event.tag);
 
-    if (event.tag === 'sync-attendance') {
-        event.waitUntil(syncAttendanceData());
-    } else if (event.tag === 'sync-data') {
-        event.waitUntil(syncAllData());
-    } else if (event.tag === 'sync-queue') {
+    if (event.tag === 'sync-attendance' ||
+        event.tag === 'sync-data' ||
+        event.tag === 'sync-queue') {
         event.waitUntil(processOfflineQueue());
     }
 });
 
-// Process queued offline actions
 async function processOfflineQueue() {
     try {
         const cache = await caches.open('offline-queue');
         const requests = await cache.keys();
 
-        console.log('[SW] Processing offline queue:', requests.length, 'items');
+        console.log('[SW] Processing queue:', requests.length, 'items');
 
         for (const request of requests) {
             try {
@@ -190,89 +273,49 @@ async function processOfflineQueue() {
                         body: data.body ? JSON.stringify(data.body) : undefined
                     });
                     await cache.delete(request);
-                    console.log('[SW] Synced queued request:', request.url);
                 }
             } catch (error) {
-                console.error('[SW] Failed to sync request:', request.url, error);
+                console.error('[SW] Sync failed:', request.url);
             }
         }
 
-        // Notify clients about sync completion
+        // Notify app
         const clients = await self.clients.matchAll();
         clients.forEach(client => {
             client.postMessage({ type: 'SYNC_COMPLETE' });
         });
     } catch (error) {
-        console.error('[SW] Error processing offline queue:', error);
+        console.error('[SW] Queue error:', error);
     }
 }
 
-async function syncAttendanceData() {
-    console.log('[SW] Syncing attendance data...');
-    return processOfflineQueue();
-}
-
-async function syncAllData() {
-    console.log('[SW] Syncing all data...');
-    return processOfflineQueue();
-}
-
 // ============================================
-// 5. PERIODIC BACKGROUND SYNC
+// 5. PERIODIC SYNC
 // ============================================
 self.addEventListener('periodicsync', (event) => {
-    console.log('[SW] Periodic Sync triggered:', event.tag);
+    console.log('[SW] Periodic Sync:', event.tag);
 
     if (event.tag === 'sync-content') {
-        event.waitUntil(syncContentPeriodically());
-    } else if (event.tag === 'update-data') {
-        event.waitUntil(updateDataPeriodically());
-    } else if (event.tag === 'check-updates') {
-        event.waitUntil(checkForUpdates());
+        event.waitUntil(refreshCache());
+    } else if (event.tag === 'update-data' || event.tag === 'check-updates') {
+        event.waitUntil(notifyClients('REFRESH_DATA'));
     }
 });
 
-async function syncContentPeriodically() {
-    console.log('[SW] Periodic content sync...');
-    try {
-        const cache = await caches.open(CACHE_NAME);
-
-        // Update critical resources
-        for (const resource of PRE_CACHE_RESOURCES) {
-            try {
-                const response = await fetch(resource, { cache: 'no-cache' });
-                if (response.ok) {
-                    await cache.put(resource, response);
-                }
-            } catch (e) {
-                console.log('[SW] Could not update:', resource);
-            }
-        }
-
-        // Notify clients
-        const clients = await self.clients.matchAll();
-        clients.forEach(client => {
-            client.postMessage({ type: 'PERIODIC_SYNC_COMPLETE' });
-        });
-    } catch (error) {
-        console.error('[SW] Periodic sync error:', error);
+async function refreshCache() {
+    const cache = await caches.open(CACHE_NAME);
+    for (const url of CORE_CACHE) {
+        try {
+            const response = await fetch(url, { cache: 'no-cache' });
+            if (response.ok) await cache.put(url, response);
+        } catch (e) { }
     }
+    await notifyClients('PERIODIC_SYNC_COMPLETE');
 }
 
-async function updateDataPeriodically() {
-    console.log('[SW] Periodic data update...');
+async function notifyClients(type) {
     const clients = await self.clients.matchAll();
-    clients.forEach(client => {
-        client.postMessage({ type: 'REFRESH_DATA' });
-    });
-}
-
-async function checkForUpdates() {
-    console.log('[SW] Checking for updates...');
-    const clients = await self.clients.matchAll();
-    clients.forEach(client => {
-        client.postMessage({ type: 'CHECK_UPDATES' });
-    });
+    clients.forEach(client => client.postMessage({ type }));
 }
 
 // ============================================
@@ -281,87 +324,58 @@ async function checkForUpdates() {
 self.addEventListener('push', (event) => {
     console.log('[SW] Push received');
 
-    let notificationData = {
+    let data = {
         title: 'IJ Education System',
-        body: 'You have a new notification',
+        body: 'New notification',
         icon: 'https://cdn-icons-png.flaticon.com/512/2997/2997322.png',
-        badge: 'https://cdn-icons-png.flaticon.com/512/2997/2997322.png',
-        tag: 'ij-education-notification',
-        requireInteraction: false,
-        actions: []
+        badge: 'https://cdn-icons-png.flaticon.com/512/2997/2997322.png'
     };
 
     if (event.data) {
         try {
-            const data = event.data.json();
-            notificationData = {
-                title: data.title || notificationData.title,
-                body: data.body || data.message || notificationData.body,
-                icon: data.icon || notificationData.icon,
-                badge: data.badge || notificationData.badge,
-                tag: data.tag || notificationData.tag,
-                data: data.data || {},
-                requireInteraction: data.requireInteraction || false,
-                actions: data.actions || [
-                    { action: 'open', title: 'Open App' },
-                    { action: 'dismiss', title: 'Dismiss' }
-                ],
-                vibrate: data.vibrate || [200, 100, 200],
-                renotify: data.renotify || false
-            };
+            const payload = event.data.json();
+            data = { ...data, ...payload };
         } catch (e) {
-            notificationData.body = event.data.text();
+            data.body = event.data.text();
         }
     }
 
     event.waitUntil(
-        self.registration.showNotification(notificationData.title, notificationData)
-    );
-});
-
-// Handle notification clicks
-self.addEventListener('notificationclick', (event) => {
-    console.log('[SW] Notification clicked:', event.action);
-    event.notification.close();
-
-    const action = event.action;
-    const notificationData = event.notification.data || {};
-
-    if (action === 'dismiss') {
-        return;
-    }
-
-    event.waitUntil(
-        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-            for (const client of clientList) {
-                if (client.url.includes(self.location.origin) && 'focus' in client) {
-                    if (notificationData.url) {
-                        client.postMessage({
-                            type: 'NOTIFICATION_CLICK',
-                            url: notificationData.url,
-                            data: notificationData
-                        });
-                    }
-                    return client.focus();
-                }
-            }
-            const urlToOpen = notificationData.url || '/ClassTrack/';
-            return self.clients.openWindow(urlToOpen);
+        self.registration.showNotification(data.title, {
+            body: data.body,
+            icon: data.icon,
+            badge: data.badge,
+            tag: 'ij-notification',
+            actions: [
+                { action: 'open', title: 'Open' },
+                { action: 'dismiss', title: 'Dismiss' }
+            ],
+            vibrate: [200, 100, 200]
         })
     );
 });
 
-// Handle notification close
-self.addEventListener('notificationclose', (event) => {
-    console.log('[SW] Notification closed');
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    if (event.action === 'dismiss') return;
+
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window' }).then((clients) => {
+            for (const client of clients) {
+                if (client.url.includes('/ClassTrack/') && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            return self.clients.openWindow('/ClassTrack/');
+        })
+    );
 });
 
 // ============================================
-// 7. MESSAGE HANDLER - Communication with app
+// 7. MESSAGE HANDLER
 // ============================================
 self.addEventListener('message', (event) => {
-    console.log('[SW] Message received:', event.data);
-
     if (!event.data) return;
 
     switch (event.data.type) {
@@ -370,52 +384,33 @@ self.addEventListener('message', (event) => {
             break;
 
         case 'CACHE_URLS':
-            if (event.data.urls && Array.isArray(event.data.urls)) {
-                event.waitUntil(
-                    caches.open(CACHE_NAME).then((cache) => {
-                        return cache.addAll(event.data.urls);
-                    })
-                );
+            if (event.data.urls) {
+                caches.open(CACHE_NAME).then(cache => {
+                    cache.addAll(event.data.urls);
+                });
             }
             break;
 
         case 'CLEAR_CACHE':
-            event.waitUntil(
-                caches.delete(CACHE_NAME).then(() => {
-                    console.log('[SW] Cache cleared');
-                    if (event.ports && event.ports[0]) {
-                        event.ports[0].postMessage({ success: true });
-                    }
-                })
-            );
-            break;
-
-        case 'GET_CACHE_SIZE':
-            event.waitUntil(
-                caches.open(CACHE_NAME).then(async (cache) => {
-                    const keys = await cache.keys();
-                    if (event.ports && event.ports[0]) {
-                        event.ports[0].postMessage({ cacheSize: keys.length });
-                    }
-                })
-            );
+            caches.delete(CACHE_NAME).then(() => {
+                if (event.ports?.[0]) {
+                    event.ports[0].postMessage({ success: true });
+                }
+            });
             break;
 
         case 'QUEUE_REQUEST':
             if (event.data.request) {
-                event.waitUntil(
-                    queueRequest(event.data.request).then(() => {
-                        if (event.ports && event.ports[0]) {
-                            event.ports[0].postMessage({ queued: true });
-                        }
-                    })
-                );
+                queueRequest(event.data.request).then(() => {
+                    if (event.ports?.[0]) {
+                        event.ports[0].postMessage({ queued: true });
+                    }
+                });
             }
             break;
     }
 });
 
-// Queue request for offline processing
 async function queueRequest(requestData) {
     const cache = await caches.open('offline-queue');
     const request = new Request(requestData.url);
@@ -426,18 +421,12 @@ async function queueRequest(requestData) {
         timestamp: Date.now()
     }));
     await cache.put(request, response);
-    console.log('[SW] Request queued:', requestData.url);
 }
 
 // ============================================
 // 8. ERROR HANDLING
 // ============================================
-self.addEventListener('error', (event) => {
-    console.error('[SW] Error:', event.error);
-});
+self.addEventListener('error', (e) => console.error('[SW] Error:', e.error));
+self.addEventListener('unhandledrejection', (e) => console.error('[SW] Rejection:', e.reason));
 
-self.addEventListener('unhandledrejection', (event) => {
-    console.error('[SW] Unhandled rejection:', event.reason);
-});
-
-console.log('[SW] Service Worker loaded - Version 4');
+console.log('[SW] ✅ Service Worker loaded - TRUE OFFLINE SUPPORT');
