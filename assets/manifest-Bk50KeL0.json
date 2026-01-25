@@ -1,12 +1,12 @@
 {
   "id": "/ClassTrack/",
-  "name": "IJ Education System",
-  "short_name": "IJ Education",
-  "description": "Premium School & Coaching Management System with Attendance, Fees, and Student Registry",
+  "name": "IJ EDUCATION SYSTEM",
+  "short_name": "ClassTrack",
+  "description": "IJ Education System - Premium Institutional Management and Attendance",
   "dir": "ltr",
   "lang": "en-US",
-  "start_url": "/ClassTrack/",
-  "scope": "/ClassTrack/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "display_override": [
     "standalone",
@@ -19,6 +19,19 @@
     "education",
     "productivity",
     "business"
+  ],
+  "iarc_rating_id": "e9-1234-5678",
+  "shortcuts": [
+    {
+      "name": "Attendance",
+      "url": "./index.html?view=attendance",
+      "description": "Mark attendance records"
+    },
+    {
+      "name": "Admin Center",
+      "url": "./index.html?view=admin",
+      "description": "Open admin dashboard"
+    }
   ],
   "screenshots": [
     {
@@ -50,13 +63,13 @@
       "purpose": "maskable"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2997/2997322.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/3602/3602151.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2997/2997322.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/3602/3602151.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
