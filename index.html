@@ -11,10 +11,10 @@
   <title>ClassTrack Pro</title>
 
   <!-- Link the Manifest - Essential for PWA -->
-  <link rel="manifest" href="/ClassTrack/manifest.json">
+  <link rel="manifest" href="./manifest.json">
 
-  <link rel="icon" type="image/png" href="/ClassTrack/icons/icon-192x192.png">
-  <link rel="apple-touch-icon" href="/ClassTrack/icons/icon-192x192.png">
+  <link rel="icon" type="image/png" href="./icons/icon-192x192.png">
+  <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Math Equation CSS -->
@@ -33,7 +33,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const registration = await navigator.serviceWorker.register('/sw.js');
+          const registration = await navigator.serviceWorker.register('./sw.js');
           console.log('✅ ClassTrack SW Registered');
 
           // ========================================
